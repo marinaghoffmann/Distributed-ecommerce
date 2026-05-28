@@ -2,8 +2,6 @@
 
 Sistema de e-commerce distribuído construído com microsserviços independentes, replicação de dados, detecção de falhas por heartbeat e autenticação via JWT.
 
-Projeto acadêmico desenvolvido para a disciplina de Sistemas Distribuídos — Cesar School.
-
 ---
 
 ## Arquitetura
