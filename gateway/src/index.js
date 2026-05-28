@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
-const { createProxyMiddleware } = require('http-proxy-middleware');
 const fs = require('fs');
 const path = require('path');
 
@@ -23,7 +22,6 @@ function log(msg) {
   fs.appendFileSync(LOG_PATH, line + '\n');
 }
 
-// --- heartbeat ---
 async function checkService(name, svc) {
   try {
     const res = await fetch(`${svc.url}/health`, { timeout: 2000 });
@@ -49,7 +47,6 @@ function startHeartbeat() {
   log('[GATEWAY] Heartbeat iniciado');
 }
 
-// --- middleware de health guard ---
 function guard(serviceName) {
   return (req, res, next) => {
     if (!SERVICES[serviceName].status)
@@ -58,30 +55,36 @@ function guard(serviceName) {
   };
 }
 
-// --- proxy com repasse de Authorization ---
-function proxy(serviceName) {
-  const svc = SERVICES[serviceName];
-  return createProxyMiddleware({
-    target: svc.url,
-    changeOrigin: true,
-    on: {
-      error: (err, req, res) => {
-        res.status(502).json({ error: 'Erro de comunicação com o serviço interno' });
-      }
+// proxy manual — repassa método, headers e body
+async function forwardRequest(serviceUrl, req, res) {
+  const targetUrl = serviceUrl + req.originalUrl;
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers['Authorization'] = req.headers.authorization;
+
+    const options = { method: req.method, headers };
+    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+      options.body = JSON.stringify(req.body);
     }
-  });
+
+    const response = await fetch(targetUrl, options);
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (err) {
+    res.status(502).json({ error: 'Erro de comunicação com o serviço interno' });
+  }
 }
 
-// --- rotas ---
+// rotas
 app.get('/health', (req, res) => {
   const status = {};
   for (const [k, v] of Object.entries(SERVICES)) status[k] = v.status ? 'up' : 'down';
   res.json({ gateway: 'ok', services: status });
 });
 
-app.use('/users',    guard('users'),    proxy('users'));
-app.use('/products', guard('products'), proxy('products'));
-app.use('/orders',   guard('orders'),   proxy('orders'));
+app.use('/users',    guard('users'),    (req, res) => forwardRequest(SERVICES.users.url,    req, res));
+app.use('/products', guard('products'), (req, res) => forwardRequest(SERVICES.products.url, req, res));
+app.use('/orders',   guard('orders'),   (req, res) => forwardRequest(SERVICES.orders.url,   req, res));
 
 startHeartbeat();
 
