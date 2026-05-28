@@ -18,7 +18,7 @@ const DB_PATH = IS_REPLICA
   ? path.join(__dirname, '../data/products_replica.json')
   : path.join(__dirname, '../data/products.json');
 
-  const REPLICA_URL = process.env.REPLICA_URL || `http://localhost:${process.env.REPLICA_PORT || 5012}`;
+const REPLICA_URL = process.env.REPLICA_URL || `http://localhost:${process.env.REPLICA_PORT || 5012}`;
 
 let rrIndex = 0;
 
@@ -26,9 +26,24 @@ function readDB() {
   if (!fs.existsSync(DB_PATH)) return [];
   return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
 }
+
 function writeDB(data) {
   fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+}
+
+async function syncReplica() {
+  try {
+    const products = readDB();
+    await fetch(`${REPLICA_URL}/products/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(products)
+    });
+    console.log('[products][primary] réplica sincronizada');
+  } catch {
+    console.log('[products][primary] falha ao sincronizar réplica');
+  }
 }
 
 function authenticate(req, res, next) {
@@ -59,8 +74,7 @@ app.get('/products', async (req, res) => {
         const r = await fetch(`${REPLICA_URL}/products`);
         const data = await r.json();
         return res.json(data);
-      } catch {
-      }
+      } catch {}
     }
   }
   res.json(readDB());
@@ -112,6 +126,19 @@ app.post('/products/replicate', (req, res) => {
   products.push(product);
   writeDB(products);
   res.status(201).json({ ok: true });
+});
+
+app.post('/products/sync', (req, res) => {
+  if (!IS_REPLICA) return res.status(403).json({ error: 'Apenas réplica aceita sync' });
+  const products = req.body;
+  writeDB(products);
+  res.json({ ok: true, synced: products.length });
+});
+
+app.post('/products/trigger-sync', async (req, res) => {
+  if (IS_REPLICA) return res.status(403).json({ error: 'Apenas primário' });
+  await syncReplica();
+  res.json({ ok: true });
 });
 
 app.listen(PORT, () =>

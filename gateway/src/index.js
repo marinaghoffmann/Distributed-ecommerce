@@ -34,7 +34,12 @@ async function checkService(name, svc) {
   try {
     const res = await fetch(`${svc.url}/health`, { timeout: 2000 });
     if (res.ok) {
-      if (!svc.status) log(`[RECOVERY] ${name} voltou a responder`);
+      if (!svc.status) {
+        log(`[RECOVERY] ${name} voltou a responder`);
+        if (name === 'products') {
+          fetch(`${svc.url}/products/trigger-sync`, { method: 'POST' }).catch(() => {});
+        }
+      }
       svc.status = true;
       svc.failures = 0;
     } else throw new Error(`status ${res.status}`);
