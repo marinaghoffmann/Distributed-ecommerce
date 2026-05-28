@@ -18,7 +18,7 @@ const DB_PATH = IS_REPLICA
   ? path.join(__dirname, '../data/products_replica.json')
   : path.join(__dirname, '../data/products.json');
 
-const REPLICA_URL = `http://localhost:${process.env.REPLICA_PORT || 5012}`;
+  const REPLICA_URL = process.env.REPLICA_URL || `http://localhost:${process.env.REPLICA_PORT || 5012}`;
 
 // --- round-robin state (só usado no primário) ---
 let rrIndex = 0;

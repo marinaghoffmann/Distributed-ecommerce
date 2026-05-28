@@ -1,0 +1,73 @@
+version: '3.9'
+
+services:
+  users:
+    build: ./users
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      JWT_SECRET: super_secret_key_change_in_prod
+    volumes:
+      - users_data:/app/data
+
+  products:
+    build: ./products
+    ports:
+      - "5002:5002"
+    environment:
+      PORT: 5002
+      REPLICA_PORT: 5012
+      REPLICA_URL: http://products-replica:5012
+      JWT_SECRET: super_secret_key_change_in_prod
+    volumes:
+      - products_data:/app/data
+
+  products-replica:
+    build: ./products
+    ports:
+      - "5012:5012"
+    command: ["node", "src/index.js", "--replica"]
+    environment:
+      PORT: 5012
+      REPLICA_PORT: 5012
+      JWT_SECRET: super_secret_key_change_in_prod
+    volumes:
+      - products_replica_data:/app/data
+
+  orders:
+    build: ./orders
+    ports:
+      - "5003:5003"
+    environment:
+      PORT: 5003
+      JWT_SECRET: super_secret_key_change_in_prod
+      PRODUCTS_URL: http://products:5002
+    volumes:
+      - orders_data:/app/data
+    depends_on:
+      - products
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      USERS_URL: http://users:5001
+      PRODUCTS_URL: http://products:5002
+      ORDERS_URL: http://orders:5003
+      HEARTBEAT_INTERVAL_MS: 5000
+    volumes:
+      - gateway_logs:/app/logs
+    depends_on:
+      - users
+      - products
+      - orders
+
+volumes:
+  users_data:
+  products_data:
+  products_replica_data:
+  orders_data:
+  gateway_logs:
