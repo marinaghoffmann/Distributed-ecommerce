@@ -7,7 +7,6 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
-// CORS para o dashboard
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -64,7 +63,6 @@ function guard(serviceName) {
   };
 }
 
-// proxy manual — repassa método, headers e body
 async function forwardRequest(serviceUrl, req, res) {
   const targetUrl = serviceUrl + req.originalUrl;
   try {
@@ -84,7 +82,6 @@ async function forwardRequest(serviceUrl, req, res) {
   }
 }
 
-// rotas
 app.get('/health', (req, res) => {
   const status = {};
   for (const [k, v] of Object.entries(SERVICES)) status[k] = v.status ? 'up' : 'down';

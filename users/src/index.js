@@ -11,7 +11,6 @@ app.use(express.json());
 
 const DB_PATH = path.join(__dirname, '../data/users.json');
 
-// --- helpers de persistência ---
 function readDB() {
   if (!fs.existsSync(DB_PATH)) return [];
   return JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
@@ -21,7 +20,6 @@ function writeDB(data) {
   fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-// --- middleware JWT ---
 function authenticate(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) {
@@ -35,7 +33,6 @@ function authenticate(req, res, next) {
   }
 }
 
-// --- endpoints ---
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.post('/users/register', async (req, res) => {
@@ -74,7 +71,6 @@ app.post('/users/login', async (req, res) => {
 });
 
 app.get('/users/:id', authenticate, (req, res) => {
-  // usuário só vê a si mesmo, admin vê qualquer um
   if (req.user.userId !== req.params.id && req.user.role !== 'admin')
     return res.status(403).json({ error: 'Acesso negado' });
 

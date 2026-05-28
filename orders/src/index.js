@@ -37,7 +37,6 @@ app.post('/orders', authenticate, async (req, res) => {
   const { productId, quantity = 1 } = req.body;
   if (!productId) return res.status(400).json({ error: 'productId é obrigatório' });
 
-  // valida produto consultando o serviço de produtos
   try {
     const r = await fetch(`${process.env.PRODUCTS_URL}/products/${productId}`);
     if (!r.ok) return res.status(404).json({ error: 'Produto não encontrado' });

@@ -20,7 +20,6 @@ const DB_PATH = IS_REPLICA
 
   const REPLICA_URL = process.env.REPLICA_URL || `http://localhost:${process.env.REPLICA_PORT || 5012}`;
 
-// --- round-robin state (só usado no primário) ---
 let rrIndex = 0;
 
 function readDB() {
@@ -52,18 +51,15 @@ app.get('/health', (req, res) =>
   res.json({ status: 'ok', instance: IS_REPLICA ? 'replica' : 'primary' })
 );
 
-// leitura com round-robin (só no primário, redireciona alternadamente)
 app.get('/products', async (req, res) => {
   if (!IS_REPLICA) {
     rrIndex++;
     if (rrIndex % 2 === 0) {
-      // encaminha para réplica
       try {
         const r = await fetch(`${REPLICA_URL}/products`);
         const data = await r.json();
         return res.json(data);
       } catch {
-        // réplica indisponível, serve do primário
       }
     }
   }
@@ -85,7 +81,6 @@ app.get('/products/:id', async (req, res) => {
   res.json(product);
 });
 
-// escrita com propagação síncrona para réplica (consistência forte)
 app.post('/products', authenticate, requireAdmin, async (req, res) => {
   const { name, description, price, stock } = req.body;
   if (!name || price === undefined)
@@ -96,7 +91,6 @@ app.post('/products', authenticate, requireAdmin, async (req, res) => {
   products.push(product);
 
   if (!IS_REPLICA) {
-    // propaga para réplica ANTES de confirmar
     try {
       await fetch(`${REPLICA_URL}/products/replicate`, {
         method: 'POST',
@@ -109,11 +103,9 @@ app.post('/products', authenticate, requireAdmin, async (req, res) => {
     writeDB(products);
     return res.status(201).json(product);
   }
-  // não deve ser chamado diretamente
   res.status(403).json({ error: 'Escreva no primário' });
 });
 
-// endpoint interno de replicação (só usado pela instância primária)
 app.post('/products/replicate', (req, res) => {
   const product = req.body;
   const products = readDB();
