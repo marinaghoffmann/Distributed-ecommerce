@@ -7,6 +7,15 @@ const path = require('path');
 const app = express();
 app.use(express.json());
 
+// CORS para o dashboard
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
 const SERVICES = {
   users:    { url: process.env.USERS_URL    || 'http://localhost:5001', status: true, failures: 0 },
   products: { url: process.env.PRODUCTS_URL || 'http://localhost:5002', status: true, failures: 0 },
