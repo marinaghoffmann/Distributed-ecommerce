@@ -172,6 +172,8 @@ distributed-ecommerce/
 
 ## Variáveis de ambiente
 
+Os arquivos `.env` estão incluídos no repositório para facilitar a execução acadêmica do projeto. Em um ambiente de produção, esses arquivos nunca devem ser versionados; a chave secreta do JWT deve ser gerada de forma aleatória e armazenada em um cofre de segredos como AWS Secrets Manager ou HashiCorp Vault.
+
 Cada serviço possui um arquivo `.env`. Em produção, substitua os valores padrão:
 
 | Variável         | Descrição                        | Padrão                          |
