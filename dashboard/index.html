@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>distributed-ecommerce · monitor</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;600&display=swap');
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --border: #1e1e2e;
+      --accent: #7c6af7;
+      --accent2: #4ade80;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --text: #e2e8f0;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+
+    .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: var(--text); }
+
+    .last-update {
+      margin-left: auto;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .pulse {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74,222,128,0.4); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+    }
+
+    h2 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover { border-color: var(--accent); }
+
+    .card-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--accent);
+    }
+
+    /* services grid */
+    .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    .service-card.up   { border-left: 3px solid var(--accent2); }
+    .service-card.down { border-left: 3px solid var(--danger); }
+
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .up   .dot { background: var(--accent2); }
+    .down .dot { background: var(--danger); animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .service-info .name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .service-info .port { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+    }
+    .up   .badge { background: rgba(74,222,128,0.1); color: var(--accent2); }
+    .down .badge { background: rgba(248,113,113,0.1); color: var(--danger); }
+
+    /* logs */
+    .log-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .log-line {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      line-height: 1.8;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      padding: 2px 0;
+    }
+    .log-line.failure { color: var(--danger); }
+    .log-line.recovery { color: var(--accent2); }
+    .log-line.gateway { color: var(--accent); }
+
+    /* orders table */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 2.5rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #16161f; }
+    th {
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      padding: 0.75rem 1.25rem;
+    }
+    td {
+      padding: 0.85rem 1.25rem;
+      font-size: 0.82rem;
+      border-top: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+    }
+    tr:hover td { background: rgba(124,106,247,0.04); }
+    .status-badge {
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      border-radius: 99px;
+      background: rgba(74,222,128,0.1);
+      color: var(--accent2);
+      font-weight: 700;
+    }
+
+    .empty { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 2rem; font-family: 'JetBrains Mono', monospace; }
+
+    /* action bar */
+    .actions { display: flex; gap: 0.75rem; margin-bottom: 2.5rem; flex-wrap: wrap; }
+    .btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn.secondary { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="pulse"></div>
+  <div class="logo">distributed<span>-ecommerce</span> / monitor</div>
+  <div class="last-update" id="lastUpdate">–</div>
+</header>
+
+<h2>serviços</h2>
+<div class="services" id="services">
+  <div class="service-card" id="svc-users">
+    <div class="dot"></div>
+    <div class="service-info"><div class="name">users</div><div class="port">:5001</div></div>
+    <div class="badge">–</div>
+  </div>
+  <div class="service-card" id="svc-products">
+    <div class="dot"></div>
+    <div class="service-info"><div class="name">products</div><div class="port">:5002</div></div>
+    <div class="badge">–</div>
+  </div>
+  <div class="service-card" id="svc-orders">
+    <div class="dot"></div>
+    <div class="service-info"><div class="name">orders</div><div class="port">:5003</div></div>
+    <div class="badge">–</div>
+  </div>
+  <div class="service-card" id="svc-gateway">
+    <div class="dot"></div>
+    <div class="service-info"><div class="name">gateway</div><div class="port">:3000</div></div>
+    <div class="badge">–</div>
+  </div>
+</div>
+
+<h2>métricas</h2>
+<div class="grid">
+  <div class="card"><div class="card-label">produtos</div><div class="card-value" id="totalProducts">–</div></div>
+  <div class="card"><div class="card-label">pedidos</div><div class="card-value" id="totalOrders">–</div></div>
+  <div class="card"><div class="card-label">serviços ativos</div><div class="card-value" id="activeServices">–</div></div>
+</div>
+
+<h2>log heartbeat</h2>
+<div class="log-box" id="logBox">
+  <div class="empty">aguardando logs...</div>
+</div>
+
+<h2>últimos pedidos</h2>
+<div class="actions">
+  <input id="userIdInput" placeholder="userId para buscar pedidos" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.8rem;width:320px;">
+  <input id="tokenInput" placeholder="JWT token" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.8rem;flex:1;min-width:200px;">
+  <button class="btn" onclick="fetchOrders()">buscar pedidos</button>
+  <button class="btn secondary" onclick="refresh()">↻ atualizar</button>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>id</th><th>produto</th><th>qtd</th><th>total</th><th>status</th><th>criado em</th></tr></thead>
+    <tbody id="ordersBody"><tr><td colspan="6" class="empty">nenhum pedido carregado</td></tr></tbody>
+  </table>
+</div>
+
+<script>
+  const GATEWAY = 'http://localhost:3000';
+  const logs = [];
+
+  function addLog(msg) {
+    const cls = msg.includes('FAILURE') ? 'failure' : msg.includes('RECOVERY') ? 'recovery' : msg.includes('GATEWAY') ? 'gateway' : '';
+    logs.unshift({ msg, cls, time: new Date().toLocaleTimeString('pt-BR') });
+    if (logs.length > 50) logs.pop();
+    renderLogs();
+  }
+
+  function renderLogs() {
+    const box = document.getElementById('logBox');
+    if (!logs.length) { box.innerHTML = '<div class="empty">sem logs ainda</div>'; return; }
+    box.innerHTML = logs.map(l => `<div class="log-line ${l.cls}">[${l.time}] ${l.msg}</div>`).join('');
+  }
+
+  function setService(name, up) {
+    const el = document.getElementById(`svc-${name}`);
+    if (!el) return;
+    el.className = `service-card ${up ? 'up' : 'down'}`;
+    el.querySelector('.badge').textContent = up ? 'up' : 'down';
+  }
+
+  async function fetchHealth() {
+    try {
+      const r = await fetch(`${GATEWAY}/health`);
+      const data = await r.json();
+      let active = 0;
+      for (const [name, status] of Object.entries(data.services)) {
+        const up = status === 'up';
+        setService(name, up);
+        if (up) active++;
+      }
+      setService('gateway', true);
+      active++;
+      document.getElementById('activeServices').textContent = active;
+      addLog(`[HEARTBEAT] gateway ok — ${active} serviços ativos`);
+    } catch {
+      setService('gateway', false);
+      addLog('[FAILURE] gateway não responde');
+    }
+  }
+
+  async function fetchProducts() {
+    try {
+      const r = await fetch(`${GATEWAY}/products`);
+      const data = await r.json();
+      document.getElementById('totalProducts').textContent = Array.isArray(data) ? data.length : '?';
+    } catch { document.getElementById('totalProducts').textContent = '–'; }
+  }
+
+  async function fetchOrders() {
+    const userId = document.getElementById('userIdInput').value.trim();
+    const token  = document.getElementById('tokenInput').value.trim();
+    if (!userId || !token) { alert('Preencha o userId e o token JWT'); return; }
+    try {
+      const r = await fetch(`${GATEWAY}/orders/${userId}`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await r.json();
+      const tbody = document.getElementById('ordersBody');
+      document.getElementById('totalOrders').textContent = Array.isArray(data) ? data.length : '?';
+      if (!Array.isArray(data) || !data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">nenhum pedido encontrado</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(o => `
+        <tr>
+          <td>${o.id.slice(0,8)}…</td>
+          <td>${o.productName}</td>
+          <td>${o.quantity}</td>
+          <td>R$ ${o.total.toLocaleString('pt-BR')}</td>
+          <td><span class="status-badge">${o.status}</span></td>
+          <td>${new Date(o.createdAt).toLocaleString('pt-BR')}</td>
+        </tr>`).join('');
+    } catch { alert('Erro ao buscar pedidos — verifique o token'); }
+  }
+
+  async function refresh() {
+    document.getElementById('lastUpdate').textContent = `atualizado: ${new Date().toLocaleTimeString('pt-BR')}`;
+    await fetchHealth();
+    await fetchProducts();
+  }
+
+  // atualiza a cada 5s
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>
